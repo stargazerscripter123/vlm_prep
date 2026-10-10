@@ -66,21 +66,24 @@ create_framework_env() {
   fi
   "$py" -m pip install -q -U pip setuptools wheel packaging ninja
 
-  url="$(torch_index_url "$torch_version" "$py")" || exit 1
-  echo "[$name] torch $torch_version from $url ${extra_torch_pkgs[*]}"
   local local_wheels="$CACHE/prefetch_$torch_version"
   if [[ -d "$local_wheels" ]] && "$py" -m pip install --no-index --find-links "$local_wheels" \
       "torch==$torch_version" torchvision "${extra_torch_pkgs[@]}"; then
     echo "[$name] torch installed from local wheels ($local_wheels)"
   else
-    "$py" -m pip install "torch==$torch_version" torchvision "${extra_torch_pkgs[@]}" --index-url "$url"
+    url="$(torch_index_url "$torch_version" "$py")" || exit 1
+    echo "[$name] torch $torch_version from $url ${extra_torch_pkgs[*]}"
+    if ! "$py" -m pip install "torch==$torch_version" torchvision "${extra_torch_pkgs[@]}" --index-url "$url"; then
+      torch_install_help "$py" "$url" "$torch_version"
+      exit 1
+    fi
   fi
 
   if grep -qi deepspeed "$requirements"; then
     # deepspeed's setup.py needs nvcc (CUDA_HOME) even when no op is prebuilt: use the CUDA
-    # version torch was built for (cu130 -> 13.0, cu126 -> 12.6), installed inside this env.
-    local tag="${url##*/}" cuda_version
-    cuda_version="${tag:2:2}.${tag:4}"
+    # version the installed torch was built for (13.0, 12.6, ...), installed inside this env.
+    local cuda_version
+    cuda_version="$("$py" -c 'import torch; print(torch.version.cuda)')"
     if [[ ! -x "$prefix/bin/nvcc" ]]; then
       echo "[$name] cuda-nvcc $cuda_version (for deepspeed)"
       "$CONDA_BASE/bin/conda" install -y -q -p "$prefix" -c nvidia -c conda-forge --override-channels \

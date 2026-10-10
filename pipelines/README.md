@@ -106,6 +106,8 @@ MODELS="32b" GPU_COUNTS="4 8" bash pipelines/sweep.sh --fw swift,trl
 从打包、`setup`、冒烟到正式跑的完整步骤，以及哪些情况还没有实测过，见仓库根目录的 [README.md](../README.md)。
 
 - pod 上没有 conda 时，`run.sh` 会把 Miniforge 装到 `./.conda`；已有 conda 就用已有的（`CONDA_BASE` 可指定）。
+- torch 默认从 `https://download.pytorch.org/whl/<cu130|cu126>` 装（按驱动选）；pod 连不上时设 `TORCH_INDEX_URL=<能访问的 wheel 源>`
+  或 `HTTPS_PROXY`。装不上时 `.cache/setup_<框架>.log` 末尾会打印诊断（能否连上、glibc、架构）。
 - 模型也可以自己拷到 `models/Qwen3-VL-32B-Instruct/`，`setup` 只做校验。
 - H200 单卡放得下 32B，所以 swift / TRL / Axolotl / Unsloth 走 DDP（每卡一份完整 BF16 模型），正确性检查直接用 32B 做。
 

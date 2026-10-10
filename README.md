@@ -26,8 +26,10 @@ bash pipelines/sweep.sh                                                  # 模�
 
 ### 0. 机器要满足的条件
 
-- **系统**：Linux，`nvidia-smi` 能用，NVIDIA 驱动 ≥ 560；有 `bash`（≥ 4.4）、`python3`、`curl`。
-- **网络**：能访问 conda-forge、PyPI、download.pytorch.org、huggingface.co。需要镜像时先 `export HF_ENDPOINT=...`。
+- **系统**：Linux（glibc ≥ 2.28，即 Ubuntu 20.04 / RHEL 8 或更新），`nvidia-smi` 能用，NVIDIA 驱动 ≥ 560；
+  有 `bash`（≥ 4.4）、`python3`、`curl`。
+- **网络**：能访问 conda-forge、PyPI、download.pytorch.org、huggingface.co。需要镜像时先设环境变量：
+  `HF_ENDPOINT=...`（Hugging Face）、`TORCH_INDEX_URL=...`（PyTorch 的 wheel 源）；走代理就设 `HTTPS_PROXY`。
 - **磁盘**：留 150GB 以上。32B 约 62GB，4B 约 9GB，5 个 conda env 共约 35GB，缓存约 12GB，其余是训练输出。
 - **路径**：项目目录的路径里不能带 `Dropbox`（脚本会拒绝写入）。
 - **`/dev/shm`**：建议 4GB 以上。更小时脚本会自动关掉 DataLoader worker，训练结果不变，数据加载变慢。
@@ -134,6 +136,7 @@ bash pipelines/run.sh status
 | 现象 | 日志 |
 |---|---|
 | `setup` 里某个 env 建不起来 | `.cache/setup_<框架>.log` |
+| 其中 torch 装不上 | 同一个日志末尾有诊断：本机能否连上 wheel 源、glibc 和架构。连不上就设 `HTTPS_PROXY` 或 `TORCH_INDEX_URL` 后重跑 `setup` |
 | 模型下载失败 | `.cache/download_Qwen3-VL-*.log` |
 | 正确性检查 FAIL | `runs/audit_<框架>_<模型>.log` |
 | 训练 FAIL | 该次训练目录下的 `train.log` 末尾 |
