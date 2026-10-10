@@ -1,0 +1,10 @@
+# plain DDP (replicate): every GPU holds the full BF16 model; num_processes is overridden by train.sh
+compute_environment: LOCAL_MACHINE
+distributed_type: MULTI_GPU
+mixed_precision: bf16
+num_machines: 1
+num_processes: 4
+machine_rank: 0
+rdzv_backend: static
+same_network: true
+use_cpu: false

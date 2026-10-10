@@ -1,0 +1,15 @@
+# DeepSpeed ZeRO-3 (shard): shared config pipelines/common/zero3.json (same file as ms-swift / Axolotl);
+# zero3_init_flag -> parameters are partitioned while loading (SFTConfig is created before the model)
+compute_environment: LOCAL_MACHINE
+distributed_type: DEEPSPEED
+deepspeed_config:
+  deepspeed_config_file: __ZERO3_JSON__    # rendered to an absolute path by train.sh
+  zero3_init_flag: true
+# no mixed_precision here: with deepspeed_config_file accelerate rejects it; bf16 comes from zero3.json
+# ("auto") + SFTConfig(bf16=True)
+num_machines: 1
+num_processes: 4
+machine_rank: 0
+rdzv_backend: static
+same_network: true
+use_cpu: false

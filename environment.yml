@@ -1,0 +1,16 @@
+# conda env create -f environment.yml
+name: vlm_prep_py311
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - pillow
+      - requests
+      - tqdm
+      - roboflow
+      - torch
+      - torchvision
+      - transformers>=4.57
+      - qwen_vl_utils>=0.0.14

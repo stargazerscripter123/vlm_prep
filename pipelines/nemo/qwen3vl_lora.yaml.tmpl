@@ -1,0 +1,94 @@
+# NeMo AutoModel LoRA SFT of Qwen3-VL -- TEMPLATE rendered by train.sh into $RUN/nemo.yaml
+# (string.Template placeholders filled from pipelines/common/hparams.sh). Adapted from the official
+# examples/vlm_finetune/qwen3_5/qwen3_6_27b_lora.yaml with every numeric default made explicit:
+# fp32 LoRA weights + kaiming lora_A init (PEFT parity), cosine schedule with warmup, AdamW
+# (0.9, 0.999) wd 0, grad clip 1.0, processor pixel bounds, 30 min distributed timeout.
+recipe: FinetuneRecipeForVLM
+
+step_scheduler:
+  global_batch_size: ${GLOBAL_BS}
+  local_batch_size: ${MICRO_BS}
+  ckpt_every_steps: ${CKPT_EVERY}
+  val_every_steps: 1000000000
+  num_epochs: 1000
+  max_steps: ${TOTAL_STEPS}
+
+dist_env:
+  backend: nccl
+  timeout_minutes: 30
+
+rng:
+  _target_: nemo_automodel.components.training.rng.StatefulRNG
+  seed: ${SEED}
+  ranked: true
+
+model:
+  _target_: nemo_automodel.NeMoAutoModelForImageTextToText.from_pretrained
+  pretrained_model_name_or_path: ${MODEL}
+  backend:
+    _target_: nemo_automodel.components.models.common.BackendConfig
+    attn: sdpa
+    linear: torch
+    rms_norm: torch
+    rope_fusion: false
+  attn_implementation: ${ATTN_IMPL}
+  torch_dtype: bfloat16
+
+processor:
+  _target_: transformers.AutoProcessor.from_pretrained
+  pretrained_model_name_or_path: ${MODEL}
+  size:
+    shortest_edge: ${MIN_PIXELS}
+    longest_edge: ${MAX_PIXELS}
+
+peft:
+  _target_: nemo_automodel.components._peft.lora.PeftConfig
+  match_all_linear: false
+  target_modules: ["*.q_proj", "*.k_proj", "*.v_proj", "*.o_proj", "*.gate_proj", "*.up_proj", "*.down_proj"]
+  dim: ${LORA_R}
+  alpha: ${LORA_ALPHA}
+  dropout: ${LORA_DROPOUT}
+  lora_dtype: float32
+  lora_A_init: kaiming
+  use_triton: false
+
+checkpoint:
+  enabled: true
+  checkpoint_dir: ${RUN}/checkpoints
+  model_save_format: safetensors
+  save_consolidated: false
+
+${DISTRIBUTED_BLOCK}
+
+freeze_config:
+  freeze_vision_tower: true
+  freeze_language_model: false
+
+loss_fn:
+  _target_: nemo_automodel.components.loss.masked_ce.MaskedCrossEntropy
+
+dataset:
+  _target_: person_rock_data.make_dataset
+  path_or_dataset: ${NEMO_DATA}/${TRAIN_SPLIT}.jsonl
+
+dataloader:
+  _target_: torchdata.stateful_dataloader.StatefulDataLoader
+  num_workers: ${DATALOADER_WORKERS}
+  collate_fn:
+    _target_: nemo_automodel.components.datasets.vlm.collate_fns.qwen2_5_collate_fn
+
+optimizer:
+  _target_: torch.optim.AdamW
+  betas: [${ADAM_BETA1}, ${ADAM_BETA2}]
+  eps: ${ADAM_EPS}
+  lr: ${LR}
+  weight_decay: ${WEIGHT_DECAY}
+
+lr_scheduler:
+  lr_decay_style: ${LR_SCHEDULER}
+  lr_warmup_steps: ${WARMUP_STEPS}
+  init_lr: 0.0
+  min_lr: 0.0
+
+clip_grad_norm:
+  max_norm: ${MAX_GRAD_NORM}

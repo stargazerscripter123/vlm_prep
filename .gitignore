@@ -1,0 +1,13 @@
+# large or local-only: never committed
+/models/
+/data/
+/doc.md
+
+# outputs, caches, secrets
+/runs/
+/.cache/
+/.conda/
+.env
+*.tar
+__pycache__/
+.DS_Store

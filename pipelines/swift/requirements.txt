@@ -1,0 +1,5 @@
+# ms-swift 4.5.3 (official image: torch 2.13.0 cu130). ms-swift caps: transformers<5.17, peft<0.21, trl<1.0, deepspeed<0.19
+ms-swift==4.5.3
+transformers==5.12.1
+deepspeed==0.18.9
+qwen_vl_utils==0.0.14

@@ -1,0 +1,2 @@
+# Unsloth 2026.10.3 caps transformers<=5.17.0, trl<=1.13.0, torch<2.15 (xformers comes from the torch index)
+unsloth==2026.10.3

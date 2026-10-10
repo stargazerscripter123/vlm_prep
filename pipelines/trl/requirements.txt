@@ -1,0 +1,9 @@
+# TRL 1.15.0 needs transformers>=5.18 for vision assistant-only loss; we use prompt/completion (completion_only_loss)
+trl==1.15.0
+peft==0.21.2
+transformers==5.19.0
+accelerate==1.15.0
+deepspeed==0.19.7
+datasets
+qwen_vl_utils==0.0.14
+scipy

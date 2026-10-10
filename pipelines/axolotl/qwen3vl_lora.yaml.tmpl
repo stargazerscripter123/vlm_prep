@@ -1,0 +1,77 @@
+# Axolotl LoRA SFT of Qwen3-VL -- TEMPLATE rendered by train.sh (string.Template placeholders filled from
+# pipelines/common/hparams.sh + run settings) into $RUN/axolotl.yaml. Do not edit values here
+# that hparams.sh owns.
+base_model: ${MODEL}
+plugins:
+  - vlm_fixes.VlmFixesPlugin      # pipelines/axolotl/vlm_fixes.py (role_boundaries bug in 0.20.0)
+processor_type: AutoProcessor
+processor_kwargs:
+  size:
+    shortest_edge: ${MIN_PIXELS}
+    longest_edge: ${MAX_PIXELS}
+
+# multimodal: no packing, raw rows go to the multimodal collator
+skip_prepare_dataset: true
+remove_unused_columns: false
+sample_packing: false
+
+# Qwen3-VL's own chat template (no injected system prompt) + explicit role boundaries so that
+# only the assistant answer + <|im_end|> is trained (qwen2_vl template would add a system turn).
+chat_template: tokenizer_default
+role_boundaries:
+  - role: system
+    start: "<|im_start|>system\n"
+    end: "<|im_end|>"
+  - role: user
+    start: "<|im_start|>user\n"
+    end: "<|im_end|>"
+  - role: assistant
+    start: "<|im_start|>assistant\n"
+    end: "<|im_end|>"
+    include_start: false
+    include_end: true
+train_on_inputs: false
+datasets:
+  - path: ${AXOLOTL_DATA}/${TRAIN_SPLIT}.jsonl
+    ds_type: json
+    type: chat_template
+    field_messages: messages
+    roles_to_train: ["assistant"]
+    train_on_eos: turn
+dataset_prepared_path: ${RUN}/prepared
+val_set_size: 0
+output_dir: ${RUN}/out
+
+adapter: lora
+lora_r: ${LORA_R}
+lora_alpha: ${LORA_ALPHA}
+lora_dropout: ${LORA_DROPOUT}
+lora_target_modules: 'model.language_model.layers.[\d]+.(mlp|self_attn).(up|down|gate|q|k|v|o)_proj'
+
+sequence_len: ${MAX_LENGTH}
+pad_to_sequence_len: false
+micro_batch_size: ${MICRO_BS}
+gradient_accumulation_steps: ${GRAD_ACC}
+max_steps: ${TOTAL_STEPS}
+optimizer: adamw_torch
+lr_scheduler: ${LR_SCHEDULER}
+learning_rate: ${LR}
+warmup_steps: ${WARMUP_STEPS}
+weight_decay: ${WEIGHT_DECAY}
+adam_beta1: ${ADAM_BETA1}
+adam_beta2: ${ADAM_BETA2}
+adam_epsilon: ${ADAM_EPS}
+max_grad_norm: ${MAX_GRAD_NORM}
+bf16: true
+tf32: false
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: false
+attn_implementation: ${ATTN_IMPL}
+logging_steps: ${LOGGING_STEPS}
+${SAVE_BLOCK}
+seed: ${SEED}
+dataloader_num_workers: ${DATALOADER_WORKERS}
+ddp_find_unused_parameters: false
+${DEEPSPEED_LINE}
+${LORA_KERNEL_BLOCK}
