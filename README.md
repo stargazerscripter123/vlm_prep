@@ -136,7 +136,7 @@ bash pipelines/run.sh status
 | 现象 | 日志 |
 |---|---|
 | `setup` 里某个 env 建不起来 | `.cache/setup_<框架>.log` |
-| 其中 torch 装不上 | 同一个日志末尾有诊断：本机能否连上 wheel 源、glibc 和架构。连不上就设 `HTTPS_PROXY` 或 `TORCH_INDEX_URL` 后重跑 `setup` |
+| 其中 torch 装不上 | PyTorch 专用源失败时脚本会自动改用 pip 默认源装同一个版本。两个都失败时，同一个日志末尾有诊断：能否连上 wheel 源、glibc 和架构；设 `HTTPS_PROXY` 或 `TORCH_INDEX_URL` 后重跑 `setup` |
 | 模型下载失败 | `.cache/download_Qwen3-VL-*.log` |
 | 正确性检查 FAIL | `runs/audit_<框架>_<模型>.log` |
 | 训练 FAIL | 该次训练目录下的 `train.log` 末尾 |

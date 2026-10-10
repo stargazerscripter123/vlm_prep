@@ -59,7 +59,7 @@ torch_install_help() {
     echo "---- torch==$version could not be installed from $url"
     echo "     python / arch / libc here: ${facts:-unknown}   (the wheels need x86_64 or aarch64 and glibc >= 2.28)"
     echo "     HTTP status of $url/torch/ from this host: ${http:-no answer}   (200 = reachable)"
-    echo "     not reachable -> set HTTPS_PROXY, or TORCH_INDEX_URL=<a PyTorch wheel index this host can reach>"
+    echo "     not reachable -> HTTPS_PROXY, or TORCH_INDEX_URL=<a wheel index this host can reach, e.g. https://pypi.org/simple>"
     echo "     reachable but 'No matching distribution' -> glibc / architecture / pip.conf (try: PIP_CONFIG_FILE=/dev/null)"
   } >&2
 }

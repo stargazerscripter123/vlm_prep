@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # create_framework_env <fw> <torch_version> <requirements.txt> <required_modules> [extra torch-index pkgs...]
 # Creates/completes conda env vlm<fw>_NV_py312 (python 3.12): torch from the driver-matched PyTorch
-# index, nvcc for deepspeed when needed, then the framework requirements with torch pinned by a
+# index (or TORCH_INDEX_URL; pip's default index as a fallback), nvcc for deepspeed when needed, then the framework requirements with torch pinned by a
 # constraints file (no dependency can swap torch). An env is only considered done when a stamp
 # (hash of requirements + torch version) exists and the required modules import; an incomplete env
 # is completed in place, FORCE=1 rebuilds from scratch.
@@ -75,9 +75,17 @@ create_framework_env() {
     echo "[$name] torch $torch_version from $url ${extra_torch_pkgs[*]}"
     if ! "$py" -m pip install "torch==$torch_version" torchvision "${extra_torch_pkgs[@]}" --index-url "$url"; then
       torch_install_help "$py" "$url" "$torch_version"
-      exit 1
+      # Same torch version from pip's default index (PyPI or the mirror configured on this host). Its
+      # CUDA build is the PyPI default, not necessarily the driver-matched one: the self-check below
+      # still requires torch.cuda.is_available().
+      echo "[$name] falling back to pip's default index for torch==$torch_version"
+      if ! "$py" -m pip install "torch==$torch_version" torchvision "${extra_torch_pkgs[@]}"; then
+        echo "[$name] torch==$torch_version could not be installed from $url nor from pip's default index" >&2
+        exit 1
+      fi
     fi
   fi
+  echo "[$name] installed: torch $("$py" -c 'import torch; print(torch.__version__, "| CUDA build", torch.version.cuda)')"
 
   if grep -qi deepspeed "$requirements"; then
     # deepspeed's setup.py needs nvcc (CUDA_HOME) even when no op is prebuilt: use the CUDA
